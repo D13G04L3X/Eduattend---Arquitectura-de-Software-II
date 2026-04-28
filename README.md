@@ -20,40 +20,34 @@ Persistencia y mensajeria:
 ## Arquitectura
 
 ```text
-Usuario/Cliente (Web/Mobile/Postman)
+Cliente (Web/Mobile/Postman)
         |
         | HTTP/JSON
         v
- API Gateway (Flask/Nginx) ---- verifica token ----> Auth Service
-        |                                            |
-        | si valido                                  | consulta credenciales
-        v                                            v
- Attendance Service -----------------------------> User Service
-        |                                            |
-        | publica evento de faltas (RabbitMQ)        |
-        v                                            |
-   Exchange: absence_events (direct)                |
-        | routing_key=absence_limit                 |
-        v                                            |
- Notification Service -------------------------------
+ Attendance Service ---- consulta usuario ----> User Service
         |
-        | envia correo SMTP
+        | publica evento de faltas (RabbitMQ)
         v
- Servicio Email Externo
+   Exchange: absence_events (direct)
+        | routing_key=absence_limit
+        v
+ Notification Service ---- envia correo SMTP ----> Servicio Email Externo
+
+Cliente (login/refresh) ---- HTTP/JSON ----> Auth Service
 ```
 
 ## Estructura de monorepo
 
 ```text
-registro-notas-AH/
+Eduattend---Arquitectura-de-Software-II/
 ├── docker-compose.yml
 ├── .env.example
 ├── run.py
 └── src/
        ├── attendance_service/
-    ├── auth_service/
-    ├── user_service/
-    └── notification_service/
+       ├── auth_service/
+       ├── user_service/
+       └── notification_service/
 ```
 
 ## Requisitos previos
@@ -67,7 +61,7 @@ registro-notas-AH/
 
 ```powershell
 git clone <url-del-repositorio>
-cd registro-notas-AH
+cd Eduattend---Arquitectura-de-Software-II
 ```
 
 2. Crear archivo de entorno
@@ -76,11 +70,20 @@ cd registro-notas-AH
 Copy-Item .env.example .env
 ```
 
-3. Configurar variables en `.env`
+3. Configurar variables en `.env` (ver `.env.example`)
 
+- JWT_SECRET
+- ATTENDANCE_DATABASE_URL
+- AUTH_DATABASE_URL
+- USER_DATABASE_URL
+- NOTIFICATION_DATABASE_URL
+- RABBITMQ_URL
+- SMTP_HOST
+- SMTP_PORT
 - SMTP_USER
 - SMTP_PASSWORD
-- JWT_SECRET (recomendado)
+- REDIS_URL (opcional: si esta vacio, usa almacenamiento en memoria)
+- USER_SERVICE_URL (opcional: por defecto http://user_service:8002)
 
 4. Construir y levantar servicios
 
@@ -105,28 +108,30 @@ docker-compose down
 | Servicio | Metodo | Ruta | Descripcion | Requiere auth |
 |----------|--------|------|-------------|---------------|
 | Attendance | GET | /health | Health check | No |
-| Attendance | POST | /api/v1/attendance | Registrar asistencia | Si |
-| Attendance | GET | /api/v1/attendance | Listar asistencias | Si |
-| Attendance | GET | /api/v1/attendance/{id} | Obtener asistencia por id | Si |
-| Attendance | PUT | /api/v1/attendance/{id} | Actualizar asistencia | Si |
-| Attendance | DELETE | /api/v1/attendance/{id} | Eliminar asistencia | Si |
+| Attendance | POST | /api/v1/attendance | Registrar asistencia | No |
+| Attendance | GET | /api/v1/attendance | Listar asistencias | No |
+| Attendance | GET | /api/v1/attendance/{id} | Obtener asistencia por id | No |
+| Attendance | PUT | /api/v1/attendance/{id} | Actualizar asistencia | No |
+| Attendance | DELETE | /api/v1/attendance/{id} | Eliminar asistencia | No |
 | Auth | GET | /health | Health check | No |
 | Auth | POST | /auth/login | Iniciar sesion y generar tokens | No |
 | Auth | POST | /auth/refresh | Renovar access token | No |
-| Auth | POST | /auth/logout | Invalidar refresh token | Si |
+| Auth | POST | /auth/logout | Invalidar refresh token | No |
 | User | GET | /health | Health check | No |
-| User | GET | /users | Listar usuarios | Si |
-| User | POST | /users | Crear usuario | Si |
-| User | GET | /users/{id} | Obtener usuario y perfil | Si |
-| User | PUT | /users/{id} | Actualizar usuario | Si |
-| User | PUT | /users/{id}/profile | Actualizar perfil | Si |
-| User | PUT | /users/{id}/role | Asignar rol | Si |
+| User | GET | /users | Listar usuarios | No |
+| User | POST | /users | Crear usuario | No |
+| User | GET | /users/{id} | Obtener usuario y perfil | No |
+| User | PUT | /users/{id} | Actualizar usuario | No |
+| User | PUT | /users/{id}/profile | Actualizar perfil | No |
+| User | PUT | /users/{id}/role | Asignar rol | No |
+| Notification | - | - | Worker RabbitMQ (sin HTTP) | No |
 
 Puertos:
 
 - Attendance Service: http://localhost:8000
 - Auth Service: http://localhost:8001
 - User Service: http://localhost:8002
+- Notification Service: sin puerto HTTP (worker RabbitMQ)
 
 ## RabbitMQ Admin
 
@@ -175,3 +180,5 @@ docker exec -it postgres_notifications psql -U notifications_user -d notificatio
 - Los protocolos se definen en servicios de dominio.
 - El wiring de dependencias se concentra en app.py de cada servicio.
 - Los secretos locales viven en .env.
+- No hay middleware de autenticacion en los servicios HTTP.
+- Si `REDIS_URL` no se configura, los refresh tokens se guardan en memoria (no persistente).
