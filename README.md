@@ -48,7 +48,6 @@ Usuario/Cliente (Web/Mobile/Postman)
 registro-notas-AH/
 ├── docker-compose.yml
 ├── .env.example
-├── .env.local.example
 ├── run.py
 └── src/
        ├── attendance_service/
@@ -62,37 +61,43 @@ registro-notas-AH/
 - Docker
 - Docker Compose
 
-## Instalacion
+## Manual de instalacion (paso a paso)
 
 1. Clonar repositorio
 
-```bash
+```powershell
 git clone <url-del-repositorio>
 cd registro-notas-AH
 ```
 
-2. Copiar variables de entorno base y secretos locales
+2. Crear archivo de entorno
 
-```bash
-cp .env.example .env
-cp .env.local.example .env.local
+```powershell
+Copy-Item .env.example .env
 ```
 
-3. Configurar secretos reales en .env.local
+3. Configurar variables en `.env`
 
 - SMTP_USER
 - SMTP_PASSWORD
+- JWT_SECRET (recomendado)
 
-4. Levantar infraestructura y servicios
+4. Construir y levantar servicios
 
-```bash
+```powershell
 docker-compose up --build -d
 ```
 
 5. Verificar estado
 
-```bash
+```powershell
 docker-compose ps
+```
+
+6. (Opcional) Detener y limpiar
+
+```powershell
+docker-compose down
 ```
 
 ## Endpoints por servicio
@@ -169,4 +174,4 @@ docker exec -it postgres_notifications psql -U notifications_user -d notificatio
 - Domain y Application no dependen de Flask, FastAPI, SQLAlchemy, pika ni smtplib.
 - Los protocolos se definen en servicios de dominio.
 - El wiring de dependencias se concentra en app.py de cada servicio.
-- Los secretos locales viven en .env.local (ignorado por git).
+- Los secretos locales viven en .env.
