@@ -25,7 +25,10 @@ def create_app() -> Flask:
     }
     Swagger(app)
 
-    database_url = os.getenv("DATABASE_URL", "sqlite:///eduattend.db")
+    database_url = os.getenv(
+        "ATTENDANCE_DATABASE_URL",
+        "postgresql+psycopg2://attendance_user:attendance_password@postgres_attendance:5432/attendance_db",
+    )
     session_factory = build_session_factory(database_url)
 
     repository = SqlAlchemyAttendanceRepository(session_factory)

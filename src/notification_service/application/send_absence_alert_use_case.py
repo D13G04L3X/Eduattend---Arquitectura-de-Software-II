@@ -22,9 +22,9 @@ class SendAbsenceAlertUseCase:
 
         subject = "⚠️ Límite de faltas alcanzado"
         message = (
-            f"Hola {student_name},\\n\\n"
-            f"Has alcanzado el limite de faltas en el curso {course_id}.\\n"
-            f"Cantidad actual de faltas: {absence_count}.\\n\\n"
+            f"Hola {student_name},\n\n"
+            f"Has alcanzado el limite de faltas en el curso {course_id}.\n"
+            f"Cantidad actual de faltas: {absence_count}.\n\n"
             "Por favor contacta a tu docente para regularizar tu situacion."
         )
 
