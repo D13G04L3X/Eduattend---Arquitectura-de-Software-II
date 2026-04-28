@@ -1,0 +1,196 @@
+# docker-compose.yml
+
+services:
+  attendance_service:
+    build:
+      context: .
+      dockerfile: src/attendance_service/Dockerfile
+    container_name: attendance_service
+    env_file:
+      - .env
+      - .env.local
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres_attendance:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  auth_service:
+    build:
+      context: .
+      dockerfile: src/auth_service/Dockerfile
+    container_name: auth_service
+    env_file:
+      - .env
+      - .env.local
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres_auth:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  user_service:
+    build:
+      context: .
+      dockerfile: src/user_service/Dockerfile
+    container_name: user_service
+    env_file:
+      - .env
+      - .env.local
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres_users:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  notification_service:
+    build:
+      context: .
+      dockerfile: src/notification_service/Dockerfile
+    container_name: notification_service
+    env_file:
+      - .env
+      - .env.local
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres_notifications:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os,pika; c=pika.BlockingConnection(pika.URLParameters(os.getenv('RABBITMQ_URL'))); c.close()\" || exit 1"]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  postgres_attendance:
+    image: postgres:16-alpine
+    container_name: postgres_attendance
+    environment:
+      POSTGRES_DB: attendance_db
+      POSTGRES_USER: attendance_user
+      POSTGRES_PASSWORD: attendance_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_attendance_data:/var/lib/postgresql/data
+      - ./src/attendance_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attendance_user -d attendance_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  postgres_auth:
+    image: postgres:16-alpine
+    container_name: postgres_auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+      - ./src/auth_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  postgres_users:
+    image: postgres:16-alpine
+    container_name: postgres_users
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: users_user
+      POSTGRES_PASSWORD: users_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+      - ./src/user_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U users_user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  postgres_notifications:
+    image: postgres:16-alpine
+    container_name: postgres_notifications
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: notifications_user
+      POSTGRES_PASSWORD: notifications_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_notifications_data:/var/lib/postgresql/data
+      - ./src/notification_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications_user -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eduattend_network
+
+volumes:
+  postgres_attendance_data:
+  postgres_auth_data:
+  postgres_users_data:
+  postgres_notifications_data:
+
+networks:
+  eduattend_network:
+    driver: bridge
