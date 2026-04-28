@@ -2,21 +2,24 @@ import os
 from http import HTTPStatus
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 from flasgger import Swagger
 
 from .application.usecases import AttendanceOperationsUseCase
-from .domain.exception import AttendanceNotFoundError, DuplicateAttendanceError
+from .domain.exception import AttendanceNotFoundError, DuplicateAttendanceError, AbsenceLimitReachedError
 from .domain.service import AbsenceEventService
 from .infrastructure.adapters.inbound import create_attendance_blueprint
 from .infrastructure.adapters.outbound import (
     RabbitMQEventPublisher,
     SqlAlchemyAttendanceRepository,
 )
+from .infrastructure.adapters.outbound.http_user_client import HttpUserClient
 from .infrastructure.config import build_session_factory
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    CORS(app)
     app.config["JSON_SORT_KEYS"] = False
     app.config["SWAGGER"] = {
         "title": "EduAttend API",
@@ -34,7 +37,14 @@ def create_app() -> Flask:
     repository = SqlAlchemyAttendanceRepository(session_factory)
     event_publisher = RabbitMQEventPublisher(os.getenv("RABBITMQ_URL"))
     absence_event_service = AbsenceEventService(event_publisher)
-    attendance_operations_use_case = AttendanceOperationsUseCase(repository)
+    user_client = HttpUserClient(
+        user_service_url=os.getenv("USER_SERVICE_URL", "http://user_service:8002")
+    )
+    attendance_operations_use_case = AttendanceOperationsUseCase(
+        repository=repository,
+        absence_event_service=absence_event_service,
+        user_client=user_client,
+    )
     app.extensions["absence_event_service"] = absence_event_service
 
     app.register_blueprint(
@@ -69,6 +79,18 @@ def create_app() -> Flask:
                 }
             ),
             HTTPStatus.NOT_FOUND,
+        )
+
+    @app.errorhandler(AbsenceLimitReachedError)
+    def handle_absence_limit_reached(error: AbsenceLimitReachedError):
+        return (
+            jsonify(
+                {
+                    "error": "absence_limit_reached",
+                    "message": str(error),
+                }
+            ),
+            HTTPStatus.UNPROCESSABLE_ENTITY,
         )
 
     return app

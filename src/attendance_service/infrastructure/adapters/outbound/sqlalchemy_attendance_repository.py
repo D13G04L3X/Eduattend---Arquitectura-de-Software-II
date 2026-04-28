@@ -106,3 +106,19 @@ class SqlAlchemyAttendanceRepository(IAttendanceRepository):
             return [attendance_from_orm(row) for row in rows]
         finally:
             session.close()
+
+    def count_by_student_and_course(
+        self,
+        student_id: str,
+        course_id: str,
+    ) -> int:
+        from sqlalchemy import func
+        session = self._session_factory()
+        try:
+            statement = select(func.count()).where(
+                AttendanceOrmModel.student_id == student_id,
+                AttendanceOrmModel.course_id == course_id,
+            )
+            return session.execute(statement).scalar() or 0
+        finally:
+            session.close()

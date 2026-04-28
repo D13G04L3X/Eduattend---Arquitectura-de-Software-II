@@ -207,7 +207,7 @@ def _validation_error_response(message: str):
     )
 
 
-def _validate_payload(payload: dict, include_date: bool):
+def _validate_payload(payload: dict, include_date: bool, require_email: bool = False):
     required_fields = ["student_id", "course_id", "class_session_id"]
     if include_date:
         required_fields.append("attendance_date")

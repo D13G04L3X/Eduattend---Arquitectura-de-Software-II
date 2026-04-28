@@ -1,4 +1,3 @@
-# src/attendance_service/domain/service/absence_event_service.py
 from typing import Protocol
 
 
@@ -24,7 +23,7 @@ class AbsenceEventService:
         absence_count: int,
         limit: int = 3,
     ) -> None:
-        if absence_count >= limit:
+        if absence_count == limit:
             self._publisher.publish_absence_limit_reached(
                 student_id=student_id,
                 student_email=student_email,

@@ -34,3 +34,11 @@ class IAttendanceRepository(ABC):
     @abstractmethod
     def list_all(self) -> list[Attendance]:
         raise NotImplementedError
+
+    @abstractmethod
+    def count_by_student_and_course(
+        self,
+        student_id: str,
+        course_id: str,
+    ) -> int:
+        raise NotImplementedError

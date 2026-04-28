@@ -8,3 +8,7 @@ class DuplicateAttendanceError(BusinessRuleViolation):
 
 class AttendanceNotFoundError(BusinessRuleViolation):
     """Raised when a requested attendance record does not exist."""
+
+
+class AbsenceLimitReachedError(BusinessRuleViolation):
+    """Raised when absence limit is reached for a student/course."""

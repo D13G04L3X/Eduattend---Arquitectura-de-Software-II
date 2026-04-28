@@ -16,7 +16,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +38,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" || exit 1"]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,7 +60,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\" || exit 1"]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\" || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,7 +82,7 @@ services:
       postgres_notifications:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import os,pika; c=pika.BlockingConnection(pika.URLParameters(os.getenv('RABBITMQ_URL'))); c.close()\" || exit 1"]
+      test: [ "CMD-SHELL", "python -c \"import os,pika; c=pika.BlockingConnection(pika.URLParameters(os.getenv('RABBITMQ_URL'))); c.close()\" || exit 1" ]
       interval: 15s
       timeout: 8s
       retries: 5
@@ -102,7 +102,7 @@ services:
       - postgres_attendance_data:/var/lib/postgresql/data
       - ./src/attendance_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U attendance_user -d attendance_db"]
+      test: [ "CMD-SHELL", "pg_isready -U attendance_user -d attendance_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -122,7 +122,7 @@ services:
       - postgres_auth_data:/var/lib/postgresql/data
       - ./src/auth_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      test: [ "CMD-SHELL", "pg_isready -U auth_user -d auth_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -142,7 +142,7 @@ services:
       - postgres_users_data:/var/lib/postgresql/data
       - ./src/user_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U users_user -d user_db"]
+      test: [ "CMD-SHELL", "pg_isready -U users_user -d user_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -162,7 +162,7 @@ services:
       - postgres_notifications_data:/var/lib/postgresql/data
       - ./src/notification_service/infrastructure/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U notifications_user -d notifications_db"]
+      test: [ "CMD-SHELL", "pg_isready -U notifications_user -d notifications_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -176,7 +176,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     healthcheck:
-      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
       interval: 10s
       timeout: 5s
       retries: 5

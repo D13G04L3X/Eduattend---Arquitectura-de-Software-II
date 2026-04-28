@@ -2,6 +2,7 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .application.assign_role_use_case import AssignRoleUseCase
 from .application.create_user_use_case import CreateUserUseCase
@@ -15,6 +16,14 @@ from .infrastructure.config.db_config import build_session_factory
 
 def create_app() -> FastAPI:
     app = FastAPI(title="User Service", version="1.0.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     database_url = os.getenv(
         "USER_DATABASE_URL",
